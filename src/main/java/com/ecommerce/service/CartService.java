@@ -16,6 +16,10 @@ public class CartService {
         cart.addProduct(product, quantity);
     }
 
+    public void removeProduct(String productId) {
+        cart.removeProduct(productId);
+    }
+
     public void clear() {
         cart.clear();
     }

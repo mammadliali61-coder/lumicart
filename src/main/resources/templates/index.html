@@ -77,7 +77,13 @@
                         <strong th:text="${item.product.name}">Item</strong>
                         <span th:text="${item.quantity + ' unit'}">1 unit</span>
                     </div>
-                    <span th:text="${'$' + #numbers.formatDecimal(item.lineTotal, 1, 2)}">$0.00</span>
+                    <div class="cart-row-actions">
+                        <span th:text="${'$' + #numbers.formatDecimal(item.lineTotal, 1, 2)}">$0.00</span>
+                        <form th:action="@{/api/cart/remove}" method="post" data-async-form="cart-remove">
+                            <input type="hidden" name="productId" th:value="${item.product.id}">
+                            <button type="submit" class="cart-remove-button">Remove</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 

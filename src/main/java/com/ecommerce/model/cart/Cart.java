@@ -23,6 +23,10 @@ public class Cart implements Payable {
         return Collections.unmodifiableList(items);
     }
 
+    public void removeProduct(String productId) {
+        items.removeIf(item -> item.getProduct().getId().equals(productId));
+    }
+
     @Override
     public double getPayableAmount() {
         return items.stream().mapToDouble(CartItem::getLineTotal).sum();

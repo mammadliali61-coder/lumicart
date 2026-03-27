@@ -172,6 +172,14 @@ public class StoreController {
         return successResponse("Product added to cart.", session);
     }
 
+    @PostMapping("/api/cart/remove")
+    @ResponseBody
+    public Map<String, Object> removeFromCartAsync(@RequestParam String productId,
+                                                   HttpSession session) {
+        cartService.removeProduct(productId);
+        return successResponse("Product removed from cart.", session);
+    }
+
     @PostMapping("/api/wallet/topup")
     @ResponseBody
     public Map<String, Object> walletTopUp(@ModelAttribute WalletTopUpForm walletTopUpForm,
@@ -476,6 +484,7 @@ public class StoreController {
         )).toList());
         state.put("cart", Map.of(
                 "items", cartService.getCart().getItems().stream().map(item -> Map.of(
+                        "productId", item.getProduct().getId(),
                         "productName", item.getProduct().getName(),
                         "quantity", item.getQuantity(),
                         "lineTotal", item.getLineTotal()

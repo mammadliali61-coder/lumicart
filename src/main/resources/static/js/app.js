@@ -135,7 +135,13 @@ function updateCart(state) {
                     <strong>${escapeHtml(item.productName)}</strong>
                     <span>${item.quantity} unit</span>
                 </div>
-                <span>${money(item.lineTotal)}</span>
+                <div class="cart-row-actions">
+                    <span>${money(item.lineTotal)}</span>
+                    <form action="/api/cart/remove" method="post" data-async-form="cart-remove">
+                        <input type="hidden" name="productId" value="${escapeHtml(item.productId)}">
+                        <button type="submit" class="cart-remove-button">Remove</button>
+                    </form>
+                </div>
             </div>
         `).join("");
 
