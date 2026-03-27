@@ -46,10 +46,10 @@ Tək GitHub sayti acmir. Bunun ucun deploy lazimdir.
 
 En rahat variant:
 - repo-nu GitHub-a yukle
-- Render veya Railway-da `Deploy from GitHub` sec
+- Render-da `New Web Service` sec
 - repository-ni bagla
-- build command: `mvn clean package`
-- start command: `java -jar target/ecommerce-platform-1.0.0.jar`
+- environment olaraq `Docker` sec
+- project-de `Dockerfile` oldugu ucun Render avtomatik build edecek
 
 Deploy bitenden sonra public link alacaqsan:
 
@@ -59,7 +59,7 @@ https://senin-project-adin.onrender.com
 
 Bu linki dostlarina gondere bilersen. Onlar sayt kimi acib baxacaqlar.
 
-## Qeyd
+## Render Qeyd
 
 `application.properties` faylinda:
 
