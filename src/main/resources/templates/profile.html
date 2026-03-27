@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page-shell profile-page-shell">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="store-header">
+        <div class="brand-nav profile-nav">
+            <div class="brand-mini">
+                <img class="brand-mini-logo" th:src="@{/img/lumicart-logo.svg}" alt="LumiCart logo">
+                <span class="brand-mini-name">LumiCart</span>
+            </div>
+            <a class="secondary-button profile-back-link" th:href="@{/}">Back to Store</a>
+        </div>
+    </header>
+
+    <section class="profile-hero">
+        <div class="listing-copy">
+            <div class="listing-badge">ACCOUNT CENTER</div>
+            <h1>Edit your profile</h1>
+            <p>Update personal details, shipping address, and payment card from one clean settings page.</p>
+        </div>
+        <div class="profile-summary-card">
+            <span>Signed in as</span>
+            <strong th:text="${currentUser.fullName}">Leyla Aliyeva</strong>
+            <p th:text="${currentUser.email}">leyla@example.com</p>
+            <div class="profile-mini-grid">
+                <div>
+                    <span>Address</span>
+                    <strong th:text="${currentUser.shippingAddress == null || currentUser.shippingAddress.isBlank() ? 'Not added' : currentUser.shippingAddress}">Not added</strong>
+                </div>
+                <div>
+                    <span>Card</span>
+                    <strong th:text="${currentUser.maskedCardNumber}">No card added</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="flash-area">
+        <div id="flash-message" class="flash success" th:if="${message}" th:text="${message}"></div>
+        <div id="flash-error" class="flash error" th:if="${error}" th:text="${error}"></div>
+    </section>
+
+    <section class="profile-shortcuts">
+        <a class="filter-chip active-chip" href="#name-card">Edit Name</a>
+        <a class="filter-chip" href="#contact-card">Address</a>
+        <a class="filter-chip" href="#card-card">Add Card</a>
+    </section>
+
+    <form th:action="@{/profile}" method="post" th:object="${profileForm}" class="profile-grid">
+        <section id="name-card" class="panel profile-card">
+            <div class="section-head">
+                <h2>Name & Surname</h2>
+                <p>Edit the public profile identity used in the store demo.</p>
+            </div>
+            <label>
+                First Name
+                <input type="text" th:field="*{firstName}" placeholder="Leyla">
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></p>
+            <label>
+                Last Name
+                <input type="text" th:field="*{lastName}" placeholder="Aliyeva">
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></p>
+        </section>
+
+        <section id="contact-card" class="panel profile-card">
+            <div class="section-head">
+                <h2>Contact & Address</h2>
+                <p>Save the email and delivery address used during checkout.</p>
+            </div>
+            <label>
+                Email
+                <input type="email" th:field="*{email}" placeholder="leyla@example.com">
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+            <label>
+                Shipping Address
+                <input type="text" th:field="*{shippingAddress}" placeholder="Baku, Azerbaijan">
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('shippingAddress')}" th:errors="*{shippingAddress}"></p>
+        </section>
+
+        <section id="card-card" class="panel profile-card profile-card-wide">
+            <div class="section-head">
+                <h2>Add Card</h2>
+                <p>Store a demo payment card so the profile page feels complete.</p>
+            </div>
+            <label>
+                Card Number
+                <input type="text" th:field="*{cardNumber}" placeholder="1111 2222 3333 4444">
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('cardNumber')}" th:errors="*{cardNumber}"></p>
+            <div class="profile-actions">
+                <button type="submit">Save Changes</button>
+                <a class="ghost-link profile-back-inline" th:href="@{/}">Return to Store</a>
+            </div>
+        </section>
+    </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+@startuml
+abstract class User
+class Customer
+class Admin
+abstract class Product
+class ElectronicsProduct
+class ClothingProduct
+class Cart
+class CartItem
+class Order
+class OrderItem
+interface Discountable
+interface Payable
+interface Shippable
+interface PaymentStrategy
+class CardPaymentStrategy
+class CashOnDeliveryStrategy
+class CatalogService
+class CheckoutService
+
+User <|-- Customer
+User <|-- Admin
+Product <|-- ElectronicsProduct
+Product <|-- ClothingProduct
+Product ..|> Discountable
+Cart ..|> Payable
+Order ..|> Payable
+Order ..|> Shippable
+PaymentStrategy <|.. CardPaymentStrategy
+PaymentStrategy <|.. CashOnDeliveryStrategy
+Cart *-- CartItem
+Order *-- OrderItem
+CheckoutService --> PaymentStrategy
+CheckoutService --> Order
+CatalogService --> Product
+@enduml

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Platform</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script defer th:src="@{/js/app.js}"></script>
+</head>
+<body>
+<div class="page-shell">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="top-benefit-bar">
+        <div class="benefit-item">
+            <strong>Free shipping</strong>
+            <span>Special for you</span>
+        </div>
+        <div class="benefit-item">
+            <strong>Delivery guarantee</strong>
+            <span>Refund for any issue</span>
+        </div>
+        <div class="benefit-item">
+            <strong>Member deals</strong>
+            <span>Fresh picks every day</span>
+        </div>
+    </div>
+    <div id="orders-panel" class="modal-panel">
+        <div class="modal-backdrop" data-close-panel="orders-panel"></div>
+        <div class="modal-window">
+            <button class="modal-close" type="button" data-close-panel="orders-panel" aria-label="Close recent orders">x</button>
+            <div class="account-panel-inner">
+            <div class="section-head">
+                <h2>Recent Orders</h2>
+                <p>Created orders are stored in memory while the application is running.</p>
+            </div>
+            <div id="orders-empty" class="orders-empty" th:if="${#lists.isEmpty(orders)}">No orders yet.</div>
+            <div id="orders-list" class="orders-list" th:unless="${#lists.isEmpty(orders)}">
+                <article class="order-card" th:each="order : ${orders}">
+                    <div class="order-top">
+                        <div>
+                            <h3 th:text="${order.orderId}">ORD-123</h3>
+                            <p th:text="${order.customer.fullName + ' | ' + order.customer.shippingAddress}">Customer</p>
+                        </div>
+                        <span class="status" th:text="${order.status}">PAID</span>
+                    </div>
+                    <div class="order-items">
+                        <div class="order-item-row" th:each="item : ${order.items}">
+                            <span th:text="${item.productName + ' x' + item.quantity}">Item</span>
+                            <span th:text="${'$' + #numbers.formatDecimal(item.lineTotal, 1, 2)}">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="order-bottom">
+                        <span th:text="${order.paymentMethod}">Card Payment</span>
+                        <strong th:text="${'$' + #numbers.formatDecimal(order.payableAmount, 1, 2)}">$0.00</strong>
+                    </div>
+                </article>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cart-panel" class="modal-panel">
+        <div class="modal-backdrop" data-close-panel="cart-panel"></div>
+        <div class="modal-window">
+            <button class="modal-close" type="button" data-close-panel="cart-panel" aria-label="Close cart">x</button>
+            <div class="account-panel-inner cart-panel">
+            <div class="section-head">
+                <h2>Cart</h2>
+                <p th:if="${cart.items.isEmpty()}">No products selected yet.</p>
+                <p th:unless="${cart.items.isEmpty()}">Current basket before order creation.</p>
+            </div>
+
+            <div id="cart-items" class="cart-items" th:if="${!cart.items.isEmpty()}">
+                <div class="cart-row" th:each="item : ${cart.items}">
+                    <div>
+                        <strong th:text="${item.product.name}">Item</strong>
+                        <span th:text="${item.quantity + ' unit'}">1 unit</span>
+                    </div>
+                    <span th:text="${'$' + #numbers.formatDecimal(item.lineTotal, 1, 2)}">$0.00</span>
+                </div>
+            </div>
+
+            <div class="cart-total">
+                <span>Total</span>
+                <strong id="cart-total-value" th:text="${'$' + #numbers.formatDecimal(cart.payableAmount, 1, 2)}">$0.00</strong>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkout-panel" class="modal-panel">
+        <div class="modal-backdrop" data-close-panel="checkout-panel"></div>
+        <div class="modal-window">
+            <button class="modal-close" type="button" data-close-panel="checkout-panel" aria-label="Close checkout">x</button>
+            <div id="checkout" class="account-panel-inner">
+                <div class="section-head">
+                    <h2>Checkout</h2>
+                    <p th:if="${currentUser == null}">Login first to continue with checkout.</p>
+                    <p th:unless="${currentUser == null}" th:text="${'Ordering as ' + currentUser.fullName + ' (' + currentUser.email + ')'}">Ordering as user</p>
+                </div>
+
+                <form id="checkout-form" th:action="@{/api/checkout}" method="post" th:object="${checkoutForm}" class="checkout-form" data-async-form="checkout">
+                    <label>
+                        Shipping Address
+                        <input type="text" th:field="*{shippingAddress}" placeholder="Baku, Azerbaijan">
+                    </label>
+                    <p class="field-error" data-error-for="shippingAddress" th:if="${#fields.hasErrors('shippingAddress')}" th:errors="*{shippingAddress}"></p>
+
+                    <label>
+                        Payment Method
+                        <select th:field="*{paymentMethod}">
+                            <option value="CARD">Card Payment</option>
+                            <option value="COD">Cash On Delivery</option>
+                            <option value="WALLET">Wallet Balance</option>
+                        </select>
+                    </label>
+                    <p class="field-error" data-error-for="paymentMethod" th:if="${#fields.hasErrors('paymentMethod')}" th:errors="*{paymentMethod}"></p>
+                    <div id="checkout-card-section" class="checkout-card-section" th:if="${currentUser != null}">
+                        <label>
+                            Card Option
+                            <select name="cardOption" id="checkout-card-option">
+                                <option th:if="${currentUser.hasSavedCard()}" value="SAVED">Use saved card</option>
+                                <option value="NEW" th:selected="${!currentUser.hasSavedCard()}">Add new card</option>
+                            </select>
+                        </label>
+                        <label id="checkout-new-card-field" th:style="${currentUser.hasSavedCard()} ? 'display:none;' : ''">
+                            New Card Number
+                            <input type="text" name="checkoutCardNumber" placeholder="1111 2222 3333 4444">
+                        </label>
+                    </div>
+                    <div class="wallet-summary" th:if="${currentUser != null}">
+                        <span>Wallet Funds</span>
+                        <strong th:text="${'$' + #numbers.formatDecimal(currentUser.balance, 1, 2)}">$0.00</strong>
+                    </div>
+
+                    <button type="submit" class="checkout-button" th:disabled="${currentUser == null}">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="wallet-panel" class="modal-panel">
+        <div class="modal-backdrop" data-close-panel="wallet-panel"></div>
+        <div class="modal-window">
+            <button class="modal-close" type="button" data-close-panel="wallet-panel" aria-label="Close wallet">x</button>
+            <div id="wallet-content" class="account-panel-inner wallet-panel-inner">
+                <div class="section-head">
+                    <h2>Wallet</h2>
+                    <p th:if="${currentUser == null}">Login to view your balance.</p>
+                    <p th:unless="${currentUser == null}">Available balance for <span th:text="${currentUser.fullName}">User</span>.</p>
+                </div>
+                <div th:if="${currentUser == null}" class="wallet-balance-card">
+                    <span>Balance</span>
+                    <strong>$0.00</strong>
+                    <p>Please sign in to access wallet details.</p>
+                </div>
+                <div th:unless="${currentUser == null}" class="wallet-balance-card">
+                    <span>Current Balance</span>
+                    <strong th:text="${'$' + #numbers.formatDecimal(currentUser.balance, 1, 2)}">$245.50</strong>
+                    <p th:text="${currentUser.hasSavedCard() ? 'Saved card: ' + currentUser.maskedCardNumber : 'No saved card yet. Add one below.'}">Saved card</p>
+                </div>
+                <form th:if="${currentUser != null}" action="/api/wallet/topup" method="post" class="checkout-form wallet-form" data-async-form="wallet-topup">
+                    <label>
+                        Card Option
+                        <select name="fundingSource" id="wallet-funding-source">
+                            <option th:if="${currentUser.hasSavedCard()}" value="SAVED">Use saved card</option>
+                            <option value="NEW" th:selected="${!currentUser.hasSavedCard()}">Add new card</option>
+                        </select>
+                    </label>
+                    <p class="field-error" data-error-for="fundingSource"></p>
+                    <label>
+                        Amount
+                        <input type="number" name="amount" min="1" step="0.01" placeholder="50">
+                    </label>
+                    <p class="field-error" data-error-for="amount"></p>
+                    <label id="wallet-new-card-field" th:style="${currentUser.hasSavedCard()} ? 'display:none;' : ''">
+                        New Card Number
+                        <input type="text" name="cardNumber" placeholder="1111 2222 3333 4444">
+                    </label>
+                    <p class="field-error" data-error-for="cardNumber"></p>
+                    <div class="wallet-summary">
+                        <span>Final Funds</span>
+                        <strong th:text="${'$' + #numbers.formatDecimal(currentUser.balance, 1, 2)}">$245.50</strong>
+                    </div>
+                    <button type="submit">Add Balance</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="modal-panel">
+        <div class="modal-backdrop" data-close-panel="admin-panel"></div>
+        <div class="modal-window">
+            <button class="modal-close" type="button" data-close-panel="admin-panel" aria-label="Close admin panel">x</button>
+            <div id="admin-content" class="account-panel-inner admin-panel-inner">
+                <div class="section-head">
+                    <h2>Admin Controls</h2>
+                    <p th:if="${currentUser == null || currentUser.role != 'ADMIN'}">Login as admin to manage products and campaigns.</p>
+                    <p th:unless="${currentUser == null || currentUser.role != 'ADMIN'}">Add new catalog items and fresh campaign cards.</p>
+                </div>
+                <div th:if="${currentUser == null || currentUser.role != 'ADMIN'}" class="wallet-balance-card">
+                    <span>Admin Access</span>
+                    <strong>Restricted</strong>
+                    <p>Only admin sessions can open management tools.</p>
+                </div>
+                <div th:unless="${currentUser == null || currentUser.role != 'ADMIN'}" class="admin-grid">
+                    <form action="/api/admin/product" method="post" class="checkout-form admin-form" data-async-form="admin-product">
+                        <div class="section-head">
+                            <h2>Add Product</h2>
+                            <p>Create a new electronics or clothing item.</p>
+                        </div>
+                        <label>
+                            Category
+                            <select name="category">
+                                <option value="ELECTRONICS">Electronics</option>
+                                <option value="CLOTHING">Clothing</option>
+                            </select>
+                        </label>
+                        <p class="field-error" data-error-for="category"></p>
+                        <label>
+                            Product Name
+                            <input type="text" name="name" placeholder="Aurora Headset">
+                        </label>
+                        <p class="field-error" data-error-for="name"></p>
+                        <label>
+                            Price
+                            <input type="number" name="price" min="1" step="0.01" placeholder="149">
+                        </label>
+                        <p class="field-error" data-error-for="price"></p>
+                        <label>
+                            Primary Detail
+                            <input type="text" name="primaryDetail" placeholder="Brand or Size">
+                        </label>
+                        <p class="field-error" data-error-for="primaryDetail"></p>
+                        <label>
+                            Secondary Detail
+                            <input type="text" name="secondaryDetail" placeholder="Warranty months or Color">
+                        </label>
+                        <p class="field-error" data-error-for="secondaryDetail"></p>
+                        <button type="submit" class="admin-submit">Add Product</button>
+                    </form>
+                    <form action="/api/admin/campaign" method="post" class="checkout-form admin-form" data-async-form="admin-campaign">
+                        <div class="section-head">
+                            <h2>Add Campaign</h2>
+                            <p>Replace the visible campaign cards with a new promo.</p>
+                        </div>
+                        <label>
+                            Title
+                            <input type="text" name="title" placeholder="Midnight Deal">
+                        </label>
+                        <p class="field-error" data-error-for="title"></p>
+                        <label>
+                            Headline
+                            <input type="text" name="headline" placeholder="2 for 1 Accessories">
+                        </label>
+                        <p class="field-error" data-error-for="headline"></p>
+                        <label>
+                            Description
+                            <input type="text" name="description" placeholder="Short campaign description">
+                        </label>
+                        <p class="field-error" data-error-for="description"></p>
+                        <button type="submit" class="admin-submit">Add Campaign</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="account-panel" class="account-panel">
+        <div id="login" class="account-panel-inner">
+            <div class="section-head">
+                <h2>Login</h2>
+                <p th:if="${currentUser == null}">Sign in to personalize the store demo.</p>
+                <p th:unless="${currentUser == null}">Your demo session is active.</p>
+            </div>
+
+            <div id="login-state" class="login-state" th:if="${currentUser != null}">
+                <div class="login-avatar" th:text="${#strings.substring(currentUser.fullName,0,1)}">L</div>
+                <div class="login-meta">
+                    <strong th:text="${currentUser.fullName}">Leyla Aliyeva</strong>
+                    <span th:text="${currentUser.email}">leyla@example.com</span>
+                    <span class="role-pill" th:text="${currentUser.role}">CUSTOMER</span>
+                </div>
+                <a class="secondary-button profile-link-button" th:href="@{/profile}">Edit Profile</a>
+                <form class="login-action" th:action="@{/api/logout}" method="post" data-async-form="logout">
+                    <button type="submit" class="secondary-button">Logout</button>
+                </form>
+            </div>
+
+            <form id="login-form" th:if="${currentUser == null}" th:action="@{/api/login}" method="post" th:object="${loginForm}" class="checkout-form" data-async-form="login">
+                <label>
+                    Full Name
+                    <input type="text" th:field="*{fullName}" placeholder="Leyla Aliyeva">
+                </label>
+                <p class="field-error" data-error-for="fullName" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></p>
+
+                <label>
+                    Email
+                    <input type="email" th:field="*{email}" placeholder="leyla@example.com">
+                </label>
+                <p class="field-error" data-error-for="email" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+
+                <label>
+                    Role
+                    <select th:field="*{role}">
+                        <option value="CUSTOMER">Customer</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </label>
+                <p class="field-error" data-error-for="role" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></p>
+
+                <button type="submit">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <header class="store-header">
+        <div class="brand-nav">
+            <div class="brand-mini">
+                <img class="brand-mini-logo" th:src="@{/img/lumicart-logo.svg}" alt="LumiCart logo">
+                <span class="brand-mini-name">LumiCart</span>
+            </div>
+            <nav class="main-nav">
+                <a id="best-sellers-link" href="#catalog">Best Sellers</a>
+                <a id="five-star-link" href="#catalog">5-Star Rated</a>
+                <a id="new-in-link" href="#catalog">New In</a>
+            </nav>
+            <div class="search-shell">
+                <input id="catalog-search" class="search-input" type="text" placeholder="Search LumiCart">
+                <button id="search-button" class="search-button" type="button" aria-label="Search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+                        <path d="M15.2 15.2L19 19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="top-actions">
+                <div class="quick-action-item">
+                    <button id="orders-toggle" class="quick-toggle" type="button" aria-label="Open recent orders">
+                        <span class="quick-toggle-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 4.5H17C18.3807 4.5 19.5 5.61929 19.5 7V18C19.5 19.3807 18.3807 20.5 17 20.5H7C5.61929 20.5 4.5 19.3807 4.5 18V7C4.5 5.61929 5.61929 4.5 7 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                                <path d="M8 9H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M8 13H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M8 17H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <span class="quick-action-label">Receipt</span>
+                </div>
+                <div class="quick-action-item">
+                    <button id="cart-toggle" class="quick-toggle" type="button" aria-label="Open cart">
+                        <span class="quick-toggle-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4.5 6H6.2L7.4 8.8H18.2C19.0159 8.8 19.6114 9.57421 19.4058 10.3638L18.0619 15.5238C17.9202 16.0675 17.4295 16.4462 16.8677 16.4462H9.24728C8.69722 16.4462 8.21391 16.0822 8.06258 15.5534L5.9 8.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="10.2" cy="19.2" r="1.4" fill="currentColor"/>
+                                <circle cx="16.4" cy="19.2" r="1.4" fill="currentColor"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <span class="quick-action-label">Cart</span>
+                </div>
+                <div class="quick-action-item">
+                    <button id="wallet-toggle" class="quick-toggle" type="button" aria-label="Open wallet">
+                        <span class="quick-toggle-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M5.5 7.5C5.5 6.39543 6.39543 5.5 7.5 5.5H17.5C18.6046 5.5 19.5 6.39543 19.5 7.5V16.5C19.5 17.6046 18.6046 18.5 17.5 18.5H7.5C6.39543 18.5 5.5 17.6046 5.5 16.5V7.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                                <path d="M5.5 8.5H15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <circle cx="16.8" cy="13" r="1.2" fill="currentColor"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <span class="quick-action-label">Wallet</span>
+                </div>
+                <div class="quick-action-item admin-action-item" th:if="${currentUser != null && currentUser.role == 'ADMIN'}">
+                    <button id="admin-toggle" class="quick-toggle" type="button" aria-label="Open admin panel">
+                        <span class="quick-toggle-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 4.5L18.5 7.7V12.8C18.5 16.3 15.9 19.2 12 20.5C8.1 19.2 5.5 16.3 5.5 12.8V7.7L12 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                                <path d="M12 8.3V13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M9.5 11H14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <span class="quick-action-label">Admin</span>
+                </div>
+                <div class="quick-action-item">
+                    <button id="checkout-toggle" class="quick-toggle" type="button" aria-label="Open checkout">
+                        <span class="quick-toggle-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 5.5H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M7 9.5H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M7 13.5H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                <path d="M6.5 3.5H17.5C18.6046 3.5 19.5 4.39543 19.5 5.5V18.5C19.5 19.6046 18.6046 20.5 17.5 20.5H6.5C5.39543 20.5 4.5 19.6046 4.5 18.5V5.5C4.5 4.39543 5.39543 3.5 6.5 3.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <span class="quick-action-label">Checkout</span>
+                </div>
+                <button id="account-toggle" class="account-toggle" th:classappend="${currentUser == null ? ' account-toggle-guest' : ''}" type="button" aria-label="Open login panel">
+                    <span id="account-toggle-icon" class="account-toggle-icon">
+                        <th:block th:if="${currentUser == null}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="8.2" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                                <path d="M6.2 18.4C7.4 15.8 9.3 14.5 12 14.5C14.7 14.5 16.6 15.8 17.8 18.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                        </th:block>
+                        <th:block th:unless="${currentUser == null}" th:text="${#strings.substring(currentUser.fullName,0,1)}">L</th:block>
+                    </span>
+                    <span id="account-toggle-label" class="account-toggle-label" th:if="${currentUser == null}">Login</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="listing-hero">
+        <div class="listing-copy">
+            <div class="listing-badge">HOT TODAY</div>
+            <h1>LumiCart Keyboard Week</h1>
+            <p>Scroll through top-rated accessories, sharp markdowns, and quick cart actions inspired by modern marketplace storefronts.</p>
+        </div>
+        <div class="hero-stats">
+            <div th:each="campaign, campaignStat : ${campaigns}"
+                 class="stat-card campaign-card"
+                 th:classappend="${campaign.primary || campaignStat.index == 0 ? ' campaign-primary' : ''}">
+                <span th:text="${campaign.title}">Weekend Campaign</span>
+                <strong th:text="${campaign.headline}">Up to 40% Off</strong>
+                <p th:text="${campaign.description}">Selected keyboards, audio gear, and daily-use accessories with quick checkout offers.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="filter-strip">
+        <button id="filters-toggle" class="filter-chip active-chip" type="button">Filters: All</button>
+        <button id="deals-toggle" class="filter-chip" type="button">Deals: Off</button>
+        <button id="sort-toggle" class="filter-chip" type="button">Sort: Relevance</button>
+        <button id="category-toggle" class="filter-chip" type="button">Category: All</button>
+        <button id="color-toggle" class="filter-chip" type="button">Color: All</button>
+        <button id="feature-toggle" class="filter-chip" type="button">Feature: All</button>
+        <button id="brand-toggle" class="filter-chip" type="button">Brand: All</button>
+    </section>
+
+    <div
+        id="flash-bootstrap"
+        th:attr="data-message=${message},data-error=${error}"
+        hidden>
+    </div>
+    <div id="cart-toast" class="cart-toast" aria-live="polite"></div>
+
+    <main class="grid-layout catalog-only-layout">
+        <section class="panel catalog-panel" id="catalog">
+            <div class="section-head">
+                <h2>Catalog</h2>
+                <p>Top categories, markdown pricing, and quick add-to-cart flow.</p>
+            </div>
+
+            <div class="catalog-grid" id="catalog-grid">
+                <article
+                    class="product-card"
+                    th:each="product, productStat : ${products}"
+                    th:attr="data-product-index=${productStat.index},
+                             data-product-id=${#strings.toLowerCase(product.id)},
+                             data-name=${#strings.toLowerCase(product.name)},
+                             data-category=${#strings.toLowerCase(product.category)},
+                             data-price=${product.finalPrice},
+                             data-sale=${productStat.index % 2 == 0},
+                             data-sales=${salesCounts[product.id]},
+                             data-rating=${product.id == 'P-109' || product.id == 'P-110' || product.id == 'P-209' || product.id == 'P-210' ? '5.0' : '4.8'},
+                             data-color=${productStat.index % 4 == 0 ? 'black' : (productStat.index % 4 == 1 ? 'white' : (productStat.index % 4 == 2 ? 'green' : 'orange'))},
+                             data-feature=${productStat.index % 3 == 0 ? 'wireless' : (productStat.index % 3 == 1 ? 'compact' : 'pro')},
+                             data-brand=${productStat.index % 4 == 0 ? 'lumicore' : (productStat.index % 4 == 1 ? 'nova' : (productStat.index % 4 == 2 ? 'orbit' : 'vexa'))}">
+                    <div class="card-glow"></div>
+                    <div class="product-flag-row">
+                        <span class="product-flag sale-flag" th:text="${productStat.index % 2 == 0 ? 'Sale' : 'Top Pick'}">Sale</span>
+                        <span class="product-flag shipping-flag">Fast Ship</span>
+                    </div>
+                    <div class="product-meta">
+                        <span class="badge" th:text="${product.category}">Category</span>
+                        <span class="product-id" th:text="${product.id}">P-100</span>
+                    </div>
+                    <h3 th:text="${product.name}">Product Name</h3>
+                    <p class="product-copy">Modern pick for everyday convenience, styled for a quick checkout decision.</p>
+                    <p class="price-row">
+                        <span class="final-price" th:text="${'$' + #numbers.formatDecimal(product.finalPrice, 1, 2)}">$0.00</span>
+                        <span class="base-price" th:text="${'$' + #numbers.formatDecimal(product.basePrice, 1, 2)}">$0.00</span>
+                    </p>
+                    <div class="rating-row">
+                        <span class="stars">★★★★★</span>
+                        <span th:text="${product.id == 'P-109' || product.id == 'P-110' || product.id == 'P-209' || product.id == 'P-210' ? '5.0 rating' : '4.8 rating'}">4.8 rating</span>
+                    </div>
+                    <div class="sales-row">
+                        <span>Sold</span>
+                        <strong th:text="${salesCounts[product.id]} + ' pcs'">120 pcs</strong>
+                    </div>
+
+                    <form th:action="@{/api/cart/add}" method="post" class="add-form" data-async-form="cart-add">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+                        <label>
+                            Qty
+                            <input type="number" name="quantity" min="1" value="1">
+                        </label>
+                        <button type="submit">Add to Cart</button>
+                    </form>
+                </article>
+            </div>
+            <div id="catalog-empty" class="orders-empty" style="display:none;">No products found for this filter.</div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

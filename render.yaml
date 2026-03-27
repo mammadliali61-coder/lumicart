@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: lumicart
+    runtime: java
+    plan: free
+    buildCommand: mvn clean package
+    startCommand: java -jar target/ecommerce-platform-1.0.0.jar
